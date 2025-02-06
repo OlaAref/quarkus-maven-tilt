@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oracle-init
+data:
+  init.sql: |
+    ALTER SESSION SET CONTAINER = FREEPDB1;
+    CREATE USER fiUser IDENTIFIED BY root123 DEFAULT TABLESPACE users QUOTA UNLIMITED on users;
+    CREATE USER user1 IDENTIFIED BY password DEFAULT TABLESPACE users QUOTA UNLIMITED on users;
+    CREATE USER user2 IDENTIFIED BY password DEFAULT TABLESPACE users QUOTA UNLIMITED on users;
+    GRANT ALL PRIVILEGES TO fiUser;
+    GRANT ALL PRIVILEGES TO user1;
+    GRANT ALL PRIVILEGES TO user2;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle
+  template:
+    metadata:
+      labels:
+        app: oracle
+    spec:
+      containers:
+      - name: oracle
+        image: gvenzl/oracle-free:23-slim-faststart
+        ports:
+        - containerPort: 1521
+        env:
+          - name: ORACLE_PASSWORD
+            value: oracle
+          - name: APP_USER_PASSWORD
+            value: password
+          - name: APP_USER
+            value: local
+          - name: ORACLE_PDB
+            value: FREEPDB1
+        volumeMounts:
+          - name: oracle-init
+            mountPath: /container-entrypoint-initdb.d
+      volumes:
+        - name: oracle-init
+          configMap:
+            name: oracle-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle
+  labels:
+    name: oracle
+spec:
+  ports:
+    - port: 1521
+      targetPort: 1521
+      protocol: TCP
+  selector:
+    app: oracle

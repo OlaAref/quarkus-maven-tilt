@@ -1,0 +1,26 @@
+# Tiltfile
+
+update_settings(max_parallel_updates=3)
+
+k8s_yaml(['k8s-oracle.yaml', 'k8s-shared-environment.yaml'])
+k8s_resource(workload='oracle', port_forwards=1521)
+
+for service in [
+    'card'
+]:
+
+    image_name = 'olaaref/%s' %(service)
+    jib_context = '../%s' %(service)
+    # MacOs Command
+    #jib_command = 'mvn clean package -Dquarkus.container-image.build=true -Dquarkus.container-image.image=$EXPECTED_REF'
+    # Windows Command
+    jib_command = 'mvn clean package -Dquarkus.container-image.build=true -Dquarkus.container-image.image=%EXPECTED_REF%'
+    k8s_local_yaml = '%s/k8s-local.yaml' %(jib_context)
+
+    custom_build(
+        ref=image_name,
+        command=jib_command,
+        dir=jib_context,
+        deps=['%s/src' %(jib_context), '%s/pom.xml' %(jib_context)]
+    )
+    k8s_yaml([k8s_local_yaml])

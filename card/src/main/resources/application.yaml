@@ -1,0 +1,14 @@
+quarkus:
+  profile: local
+  http:
+    root-path: /api/v1/card
+
+  datasource:
+    db-kind: oracle
+    jdbc:
+      url: jdbc:oracle:thin:@oracle:1521/FREEPDB1
+    password: root123
+    username: fiUser
+    log:
+      format-sql: true
+      sql: true
